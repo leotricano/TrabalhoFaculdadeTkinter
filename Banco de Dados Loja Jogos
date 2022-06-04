@@ -1,0 +1,307 @@
+import sqlite3
+import tkinter.messagebox
+import tkinter.ttk as ttk
+from tkinter import PhotoImage, Tk, Label, IntVar, StringVar, Entry, Scrollbar, Button, Toplevel, Frame, TOP, LEFT, RIGHT, X, W, Y, BOTTOM, SOLID, HORIZONTAL, VERTICAL, NO, Menu, Message
+
+janela = Tk()
+janela.title("**** LISTA DE CLIENTES *****")
+width = 900
+height = 600
+sc_width = janela.winfo_screenwidth()
+sc_height = janela.winfo_screenheight()
+x = (sc_width/2) - (width/2)
+y = (sc_height/2) - (height/2)
+janela.geometry("%dx%d+%d+%d" % (width, height, x, y))
+janela.resizable(0,0)
+#bg1 = PhotoImage(file = "Final_Fantasy_VII_Remake_capa.png")
+#label1 = Label( janela, image = bg1)
+#label1.place(x = 0, y = 0)
+janela.config(bg='#0E005D')
+
+nome = StringVar()
+cpf = IntVar()
+email = StringVar()
+telefone = IntVar()
+produto = StringVar()
+
+caminhoBanco = "clientes.db"
+
+def banco():
+    conn = sqlite3.connect(caminhoBanco)
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS loja_jogos_clientes(
+                        id_cliente INTEGER PRIMARY KEY AUTOINCREMENT,
+                        nome TEXT,
+                        email VARCHAR(50),
+                        telefone INTEGER(12),
+		                cpf INTEGER(11),
+                        produto TEXT)''')
+
+    cursor.execute("SELECT * FROM 'loja_jogos_clientes' ORDER BY id_cliente")
+    pesquisa = cursor.fetchall()
+    for data in pesquisa:
+        arvore.insert('', 'end', values=(data))
+    cursor.close()
+    conn.close()
+
+def new_user():
+
+ 
+    if nome.get() == "" or email.get() == "" or telefone.get() == "" or cpf.get() == "" or produto.get() == "":
+        tkinter.messagebox.showwarning("", "Há campos vazios. Preencha!", icon="warning")
+
+    elif nome.get().isdigit() or email.get().isdigit() or produto.get().isdigit():
+        tkinter.messagebox.showwarning("", "Há tipos de dados incorretos! Por favor, revise.", icon="warning")
+
+    else:
+       # error["text"] = "Added New User"
+        arvore.delete(*arvore.get_children())
+        conn = sqlite3.connect(caminhoBanco)
+        cursor = conn.cursor()
+        query = ("INSERT INTO loja_jogos_clientes (nome, email, telefone, cpf, produto) VALUES(?,?,?,?,?)")
+        cursor.execute(query, (str(nome.get()), str(email.get()), int(telefone.get()), int(cpf.get()), str(produto.get())))
+        conn.commit()
+        cursor.execute("SELECT * FROM 'loja_jogos_clientes' ORDER BY id_cliente")
+        result = cursor.fetchall()
+        for data in result:
+            arvore.insert('', 'end', values=(data))
+        cursor.close()
+        conn.close()
+        nome.set("")
+        email.set("")
+        telefone.set("")
+        cpf.set("")
+        produto.set("")
+
+def alterarDadosClientes():
+    arvore.delete(*arvore.get_children())
+    conn = sqlite3.connect(caminhoBanco)
+    cursor = conn.cursor()
+    cursor.execute(""" UPDATE 'loja_jogos_clientes' SET nome = ?, email = ?, telefone = ?, cpf = ?, produto = ? WHERE id_cliente = ?""",
+                   (str(nome.get()), str(email.get()), int(telefone.get()), int(cpf.get()), str(produto.get()), int(id_cliente)))
+    conn.commit()
+    cursor.execute("SELECT * FROM 'loja_jogos_clientes' ORDER BY id_cliente")
+    fetch = cursor.fetchall()
+    for data in fetch:
+        arvore.insert('', 'end', values=(data))
+    cursor.close()
+    conn.close()
+    nome.set("")
+    email.set("")
+    telefone.set("")
+    cpf.set("")
+    produto.set("")
+    janelaAtualizar.destroy()
+
+def apagarCliente():
+    if not arvore.selection():
+        tkinter.messagebox.showwarning('ALERTA DE ERRO', 'Por favor, selecione o item na lista.', icon='warning')
+    else:
+        resultado = tkinter.messagebox.askquestion('', 'Deseja realmente excluir um cliente?')
+        if resultado == 'yes':
+            item = arvore.focus()
+            conteudo = (arvore.item(item))
+            item_selecionado = conteudo['values']
+            arvore.delete(item)
+            conn = sqlite3.connect(caminhoBanco)
+            cursor = conn.cursor()
+            cursor.execute(f"DELETE FROM 'loja_jogos_clientes' WHERE id_cliente = {item_selecionado[0]}")
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+def selecionarCliente(event):
+    global id_cliente, janelaAtualizar
+    item = arvore.focus()
+    conteudo = (arvore.item(item))
+    item_selecionado = conteudo['values']
+    id_cliente = item_selecionado[0]
+    nome.set("")
+    email.set("")
+    telefone.set("")
+    cpf.set("")
+    produto.set("")
+    nome.set(item_selecionado[1])
+    email.set(item_selecionado[2])
+    telefone.set(item_selecionado[3])
+    cpf.set(item_selecionado[4])
+    produto.set(item_selecionado[5])
+
+   #Janela de Inserir Cadastro ================================================================================
+    janelaAtualizar = Toplevel()
+    janelaAtualizar.title("**** ATUALIZANDO CLIENTE *****")
+    tituloFormulario = Frame(janelaAtualizar)
+    tituloFormulario.pack(side=TOP)
+    clienteFormulario = Frame(janelaAtualizar)
+    clienteFormulario.pack(side=TOP, pady=10)
+    width = 400
+    height = 300
+    sc_width = janelaAtualizar.winfo_screenwidth()
+    sc_height = janelaAtualizar.winfo_screenheight()
+    x = (sc_width/2) - (width/2)
+    y = (sc_height/2) - (height/2)
+    janelaAtualizar.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    janelaAtualizar.resizable(0, 0)
+#Atualizando====================================================================================
+    labelTitulo = Label(tituloFormulario, text="Atualizando clientes",
+                      font=('arial', 18), bg='blue', width=280)
+    labelTitulo.pack(fill=X)
+    labelNome = Label(clienteFormulario, text='Nome', font=('arial', 12))
+    labelNome.grid(row=0, sticky=W)
+    labelEmail = Label(clienteFormulario, text='Email', font=('arial', 12))
+    labelEmail.grid(row=1, sticky=W)
+    labelTelefone = Label(clienteFormulario, text='Telefone', font=('arial', 12))
+    labelTelefone.grid(row=2, sticky=W)
+    labelCpf = Label(clienteFormulario, text='Cpf', font=('arial', 12))
+    labelCpf.grid(row=3, sticky=W)
+    labelProduto = Label(clienteFormulario, text='Produto', font=('arial', 12))
+    labelProduto.grid(row=4, sticky=W)
+    
+    entradaNome = Entry(clienteFormulario, textvariable=nome, font=('arial', 12))
+    entradaNome.grid(row=0, column=1)
+    entradaEmail = Entry(clienteFormulario, textvariable=email, font=('arial', 12))
+    entradaEmail.grid(row=1, column=1)
+    entradaTelefone = Entry(clienteFormulario, textvariable=telefone, font=('arial', 12))
+    entradaTelefone.grid(row=2, column=1)
+    entradaCpf = Entry(clienteFormulario, textvariable=cpf, font=('arial', 12))
+    entradaCpf.grid(row=3, column=1)
+    entradaProduto = Entry(clienteFormulario, textvariable=produto, font=('arial', 12))
+    entradaProduto.grid(row=4, column=1)
+    
+    atualizacaoBotao = Button(clienteFormulario, text="Atualizar",
+                            width=50, command=alterarDadosClientes)
+    atualizacaoBotao.grid(row=6, columnspan=2, pady=10)
+#=================================================================================================
+
+def inserirCliente():
+    global janelaAdicionar
+    nome.set("")
+    email.set("")
+    telefone.set("")
+    cpf.set("")
+    produto.set("")
+
+    janelaAdicionar = Toplevel()
+    janelaAdicionar.title("**** INSERINDO CLIENTE *****")
+    tituloFormulario = Frame(janelaAdicionar)
+    tituloFormulario.pack(side=TOP)
+    clienteFormulario = Frame(janelaAdicionar)
+    clienteFormulario.pack(side=TOP, pady=10)
+    width = 400
+    height = 300
+    sc_width = janelaAdicionar.winfo_screenwidth()
+    sc_height = janelaAdicionar.winfo_screenheight()
+    x = (sc_width/2) - (width/2)
+    y = (sc_height/2) - (height/2)
+    janelaAdicionar.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    janelaAdicionar.resizable(0, 0)
+
+
+    labelTitulo = Label(tituloFormulario, text="Inserindo clientes",
+                      font=('arial', 18), bg='blue', width=280)
+    labelTitulo.pack(fill=X)
+    labelNome = Label(clienteFormulario, text='Nome', font=('arial', 12))
+    labelNome.grid(row=0, sticky=W)
+    labelEmail = Label(clienteFormulario, text='Email', font=('arial', 12))
+    labelEmail.grid(row=1, sticky=W)
+    labelTelefone = Label(clienteFormulario, text='Telefone', font=('arial', 12))
+    labelTelefone.grid(row=2, sticky=W)
+    labelCpf = Label(clienteFormulario, text='Cpf', font=('arial', 12))
+    labelCpf.grid(row=3, sticky=W)
+    labelProduto = Label(clienteFormulario, text='Produto', font=('arial', 12))
+    labelProduto.grid(row=4, sticky=W)
+
+    entradaNome = Entry(clienteFormulario, textvariable=nome, font=('arial', 12))
+    entradaNome.grid(row=0, column=1)
+    entradaNome.focus()
+    entradaEmail = Entry(clienteFormulario, textvariable=email, font=('arial', 12))
+    entradaEmail.grid(row=1, column=1)
+    entradaTelefone = Entry(clienteFormulario, textvariable=telefone, font=('arial', 12))
+    entradaTelefone.grid(row=2, column=1)
+    entradaCpf = Entry(clienteFormulario, textvariable=cpf, font=('arial', 12))
+    entradaCpf.grid(row=3, column=1)
+    entradaProduto = Entry(clienteFormulario, textvariable=produto, font=('arial', 12))
+    entradaProduto.grid(row=4, column=1)
+
+    enviarClientesBotao = Button(clienteFormulario, text="Cadastrar",
+                            width=50, command=new_user)
+    enviarClientesBotao.grid(row=6, columnspan=2, pady=10)
+
+#Tk===================================================================
+
+
+
+#Mensagem de erro new_user ====================================
+error = Message(text="", width=160)
+error.place(x=30, y=10)
+error.config(padx=0)
+
+parteSuperior = Frame(janela, width=500, bd=1, relief=SOLID)
+parteSuperior.pack(side=TOP)
+parteDoMeio = Frame(janela, width=500, bg='#0E005D')
+parteDoMeio.pack(side=TOP)
+parteDoMeioEsquerda = Frame(parteDoMeio, width=100)
+parteDoMeioEsquerda.pack(side=LEFT, pady=10)
+parteDoMeioEsquerdaPadding = Frame(parteDoMeio, width=350, bg="#0E005D")
+parteDoMeioEsquerdaPadding.pack(side=LEFT)
+parteInferior = Frame(janela, width=500)
+parteInferior.pack(side=BOTTOM)
+margemTabela = Frame(janela, width=500)
+margemTabela.pack(side=TOP)
+
+#Titulo Botão==============================================================================================
+labelTitulo = Label(parteSuperior, text="CONTROLE DE CLIENTES DA LOJA DE JOGOS", font=('arial italic', 18, "bold", "italic"), width=500)
+labelTitulo.pack(fill=X)
+
+labelAtualizar = Label(parteInferior, text="Para editar algum cliente, clique duas vezes nele.", font=('courier', 12), width=200)
+labelAtualizar.pack(fill=X)
+
+
+#Botão=====================================================================================================
+botaoAdicionar = Button(parteDoMeioEsquerda, text="ADICIONAR", bg="#54E700", command=inserirCliente)
+botaoAdicionar.pack()
+botaoApagar = Button(parteDoMeioEsquerdaPadding, text="EXCLUIR",
+                     bg="OrangeRed2", command=apagarCliente)
+botaoApagar.pack(side=RIGHT)
+
+ScrollbarX = Scrollbar(margemTabela, orient=HORIZONTAL)
+ScrollbarY = Scrollbar(margemTabela, orient=VERTICAL)
+
+#Arvore======================================================================================================
+arvore = ttk.Treeview(margemTabela, columns=("ID", "Nome", "Email", "Telefone", "cpf", "Produto"),
+                    height=400, selectmode="extended", yscrollcommand=ScrollbarY.set, xscrollcommand = ScrollbarX.set)
+ScrollbarY.config(command=arvore.yview)
+ScrollbarY.pack(side=RIGHT, fill=Y)
+ScrollbarX.config(command=arvore.xview)
+ScrollbarX.pack(side=BOTTOM, fill=X)
+arvore.heading("ID", text="ID", anchor=W)
+arvore.heading("Nome", text="Nome", anchor=W)
+arvore.heading("Email", text="Email", anchor=W)
+arvore.heading("Telefone", text="Telefone", anchor=W)
+arvore.heading("cpf", text="CPF", anchor=W)
+arvore.heading("Produto", text="Produto", anchor=W)
+arvore.column('#0', stretch=NO, minwidth=0, width=0)
+arvore.column('#1', stretch=NO, minwidth=0, width=20)
+arvore.column('#2', stretch=NO, minwidth=0, width=80)
+arvore.column('#3', stretch=NO, minwidth=0, width=120)
+arvore.column('#4', stretch=NO, minwidth=0, width=90)
+arvore.column('#5', stretch=NO, minwidth=0, width=80)
+arvore.pack()
+arvore.bind('<Double-Button>', selecionarCliente)
+
+
+menuBarra = Menu(janela)
+janela.config(menu=menuBarra)
+
+arquivoMenu = Menu(menuBarra, tearoff=0)
+menuBarra.add_cascade(label="Menu", menu=arquivoMenu)
+arquivoMenu.add_command(label="Criar novo", command=inserirCliente)
+arquivoMenu.add_separator()
+arquivoMenu.add_command(label="Sair", command=janela.destroy)
+
+menuSobre = Menu(menuBarra, tearoff=0)
+
+if __name__ == '__main__':
+    banco()
+    janela.mainloop()
+
